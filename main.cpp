@@ -249,8 +249,12 @@ void adminActions() {
             cout << "Enter Customer Username to Remove: ";
             cin >> username;
             removeCustomerByUsername(username);
-            cout << "Press any key to continue...";
-            _getch();
+
+            cout << "customer removed succesfully with username" << username;
+            cout << "PRESS ENTER TO CONTINUE" << endl;
+            cin.get();
+
+            
             break;
 
         }
@@ -263,6 +267,7 @@ void adminActions() {
             cout << "Enter Customer Username to Modify: ";
             cin >> username;
             modifyCustomer(username);
+
             break;
         }
         case '4': {
@@ -274,6 +279,9 @@ void adminActions() {
             cout << "Enter Customer Username to Update: ";
             cin >> username;
             modifyCustomer(username);
+            cout << "PRESS ENTER TO CONTINUE" << endl;
+            cin.get();
+            
             break;
         }
         case '5':
@@ -282,6 +290,8 @@ void adminActions() {
 
             centerText(BOLD BLUE "=== Display All Customers ===" RESET);
             displayAllCustomers();
+            cout << "PRESS ENTER TO CONTINUE" << endl;
+            cin.get();
             break;
         case '6':
             clearScreen();
@@ -292,6 +302,8 @@ void adminActions() {
             cout << "Enter Customer Username: ";
             cin >> username;
             admin.deposit(username);
+            cout << "PRESS ENTER TO CONTINUE" << endl;
+            cin.get();
             break;
         case '7':
 
@@ -303,6 +315,8 @@ void adminActions() {
             cout << "Enter Customer Username: ";
             cin >> username;
             admin.displayTransactionsForUser(username);
+            cout << "PRESS ENTER TO CONTINUE" << endl;
+            cin.get();
             break;
         case '8':
             clearScreen();
@@ -352,7 +366,8 @@ void adminActions() {
                 admin1.viewTask();
                 break;
             default:
-                centerText(RED "❌ Invalid choice. Please try again." RESET);
+                centerText(RED "❌ Invalid choice. Press Enter to continue." RESET);
+                cin.get();
             }
             break;
         }
@@ -364,7 +379,8 @@ void adminActions() {
             centerText(CYAN "Logging out... Goodbye!" RESET);
             break;
         default:
-            centerText(RED "❌ Invalid choice. Please try again." RESET);
+            centerText(RED "❌ Invalid choice. Please enter to continue." RESET);
+            cin.get();
         }
 
         if (adminChoice != 'e') {
@@ -402,18 +418,26 @@ void customerActions(const string& username) {
         case '1':
             clearScreen();
             transactionManager.showBalance(username);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         case '2':
             clearScreen();
             transactionManager.deposit(username);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         case '3':
             clearScreen();
             transactionManager.displayTransactionsForUser(username);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         case '4':
             clearScreen();
             transactionManager.transferMoney(username);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         case '5':
             clearScreen();
@@ -424,6 +448,8 @@ void customerActions(const string& username) {
             getline(cin, complaint);
             makeComplaint(username, complaint);
             cout << "\nComplaint submitted successfully!" << endl;
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         case '6':
             clearScreen();
@@ -431,6 +457,8 @@ void customerActions(const string& username) {
             break;
         default:
             centerText(RED "❌ Invalid choice. Please try again." RESET);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
         }
 
         if (choice != '6') {
@@ -475,22 +503,32 @@ void atmActions() {
         case '1':
             clearScreen();
             transactionManager.showBalance(username);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         case '2':
             clearScreen();
             transactionManager.withdrawAmount(username);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         case '3':
             clearScreen();
             transactionManager.displayTransactionsForUser(username);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         case '4':
             clearScreen();
             centerText(BLUE "Exiting ATM Menu... Goodbye!" RESET);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
             break;
         default:
             clearScreen();
             centerText(RED "❌ Invalid choice. Please try again." RESET);
+            centerText(BLUE "Press Enter to continue..." RESET);
+            cin.get();
         }
 
         if (atmChoice != '4') {
@@ -592,10 +630,14 @@ int main() {
             if (atmLogin.login_as_atm(username, pin)) {
                 clearScreen();
                 centerText(GREEN "✔ Logged in as ATM User successfully." RESET);  // Positive feedback
-                atmActions();  // Navigate to ATM Menu after successful login
+                atmActions();
+                centerText(BLUE "Press Enter to continue..." RESET);
+                cin.get();// Navigate to ATM Menu after successful login
             }
             else {
-                centerText(RED "❌ Invalid ATM credentials. Try again." RESET);  // Error feedback
+                centerText(RED "❌ Invalid ATM credentials. Try again." RESET);
+                centerText(BLUE "Press Enter to continue..." RESET);
+                cin.get();// Error feedback
             }
             break;
         }
