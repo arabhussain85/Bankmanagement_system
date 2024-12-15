@@ -1,45 +1,52 @@
-#pragma once
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <vector>
-#include <limits> 
+#include <limits> // For numeric_limits
+#include <chrono>
+#include <ctime>
 
 using namespace std;
 
-void updateCustomerBalance(const string& username, double newBalance) {
+void updateCustomerBalance(const string& username, double newBalance)
+{
     string line;
-    vector<string> fileData;
+    vector<string> fileData; // To store all lines of the file
     bool found = false;
 
-    ifstream inputFile(" customerdata.csv"); // Adjust the path if necessary
-    if (!inputFile.is_open()) {
+    ifstream inputFile("customerdata.csv"); // Adjust the path if necessary
+    if (!inputFile.is_open())
+    {
         cerr << "Error opening customer file." << endl;
         return;
     }
 
     // Read file line by line
-    while (getline(inputFile, line)) {
+    while (getline(inputFile, line))
+    {
         stringstream ss(line);
         vector<string> tokens;
         string token;
-        while (getline(ss, token, ',')) {
+        while (getline(ss, token, ','))
+        {
             tokens.push_back(token);
         }
 
         // Check if this is the user we need to update
-        if (tokens.size() >= 6 && tokens[0] == username) {
+        if (tokens.size() >= 6 && tokens[0] == username)
+        {
             // Update the balance
-            double currentBalance = stod(tokens[5]); // Balance is the 7th field
+            double currentBalance = stod(tokens[5]);            // Balance is the 7th field
             tokens[5] = to_string(currentBalance + newBalance); // Update balance
             found = true;
         }
 
         // Reconstruct the line
         string updatedLine = tokens[0];
-        for (size_t i = 1; i < tokens.size(); i++) {
+        for (size_t i = 1; i < tokens.size(); i++)
+        {
             updatedLine += "," + tokens[i];
         }
         fileData.push_back(updatedLine);
@@ -47,94 +54,99 @@ void updateCustomerBalance(const string& username, double newBalance) {
 
     inputFile.close();
 
-    if (!found) {
+    if (!found)
+    {
         cerr << "Customer not found in file." << endl;
         return;
     }
 
     // Write back updated data to the file
-    ofstream outputFile(" customerdata.csv", ios::trunc);
-    if (!outputFile.is_open()) {
+    ofstream outputFile("customerdata.csv", ios::trunc);
+    if (!outputFile.is_open())
+    {
         cerr << "Error opening customer file for writing." << endl;
         return;
     }
 
-    for (const auto& line : fileData) {
+    for (const auto& line : fileData)
+    {
         outputFile << line << endl;
     }
 
     outputFile.close();
 }
 
-
-
-class Transaction {
+class Transaction
+{
 public:
     string transactionID;
     string username;
     double amount;
-    string type;
+    string event;
     string date;
-    string description;
 
-    Transaction(string tID, string uname, double amt, string t, string d, string desc)
-        : transactionID(tID), username(uname), amount(amt), type(t), date(d), description(desc) {}
+    Transaction(string tID, string uname, double amt, string event, string buffer)
+        : transactionID(tID), username(uname), amount(amt), event(event), date(buffer) {}
 
-    void displayTransaction() const {
+    void displayTransaction() const
+    {
         cout << "\nTransaction ID: " << transactionID
             << "\nUsername: " << username
             << "\nAmount: $" << fixed << setprecision(2) << amount
-            << "\nType: " << type
-            << "\nDate: " << date
-            << "\nDescription: " << description
+            << "\nType: " << event
+            << "\nDate & Time: " << date
             << "\n-----------------------------------" << endl;
     }
 };
 
-class TransactionManager {
+class TransactionManager
+{
 private:
     vector<Transaction> transactions;
-    int transactionCounter = 1000;
+    int transactionCounter = 100; // Initialized to 1000 for unique transaction IDs
 
 public:
-    TransactionManager() {
+    TransactionManager()
+    {
         loadTransactionCounter(); // Load counter on initialization
     }
 
     // Function to add a transaction
-    void addTransaction(string tID, string uname, double amt, string t, string d, string desc) {
-        Transaction newTransaction(tID, uname, amt, t, d, desc);
+    void addTransaction(string tID, string uname, double amt, string event)
+    {
+        auto now = chrono::system_clock::now();
+        time_t currentTime = chrono::system_clock::to_time_t(now);
+        char buffer[100];
+        
+
+        Transaction newTransaction(tID, uname, amt, event, buffer);
         transactions.push_back(newTransaction);
         saveTransactionsToFile();
         cout << "\nTransaction Successful! Transaction ID: " << tID << endl;
     }
 
     // Function to handle deposits
-    void deposit(string username) {
+    void deposit(string username)
+    {
         double amount;
-        string date, description;
 
         cout << "Enter Deposit Amount: $";
-        while (!(cin >> amount) || amount <= 0) {
+        while (!(cin >> amount) || amount <= 0)
+        {
             cout << "Invalid amount. Please enter a positive value: $";
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
         }
         cin.ignore(); // Clear buffer
 
-        cout << "Enter Date (e.g., 2024-12-07): ";
-        getline(cin, date);
-
-        cout << "Enter Description: ";
-        getline(cin, description);
-
-        addTransaction(generateTransactionID(), username, amount, "Deposit", date, description);
+        addTransaction(generateTransactionID(), username, amount, "Deposit");
 
         updateCustomerBalance(username, amount);
     }
 
     // Function to handle withdrawals
-    void withdrawAmount(string usernameToSearch) {
+    void withdrawAmount(string usernameToSearch)
+    {
         string filePath = "customerdata.csv";
         double withdrawAmount;
 
@@ -144,18 +156,17 @@ public:
         cout << "Enter the amount to withdraw: $";
         cin >> withdrawAmount;
 
-        if (withdrawAmount <= 0) {
+        if (withdrawAmount <= 0)
+        {
             cout << "Error: Withdrawal amount must be greater than zero!" << endl;
-            cout << "\t\t\t\t\t\t\t\t\t\tPRESS ENTER TO CONTINUE........." << endl;
-            cin.get();
             return;
         }
 
         // Open the file for reading and writing
         ifstream inputFile(filePath);
-        if (!inputFile) {
+        if (!inputFile)
+        {
             cout << "Error: Unable to open file!" << endl;
-
             return;
         }
 
@@ -164,29 +175,34 @@ public:
         bool userFound = false;
 
         // Process the file line by line
-        while (getline(inputFile, line)) {
+        while (getline(inputFile, line))
+        {
             stringstream ss(line);
             string username, password, accountType, pin, accountNumber;
             double balance;
 
             // Parse the line
-            getline(ss, username, ','); // 1st field
-            getline(ss, password, ','); // 2nd field
-            getline(ss, accountType, ','); // 3rd field
-            getline(ss, pin, ',');        // 4th field
+            getline(ss, username, ',');      // 1st field
+            getline(ss, password, ',');      // 2nd field
+            getline(ss, accountType, ',');   // 3rd field
+            getline(ss, pin, ',');           // 4th field
             getline(ss, accountNumber, ','); // 5th field
-            ss >> balance;               // 6th field
+            ss >> balance;                   // 6th field
 
-            if (username == usernameToSearch) {
+            if (username == usernameToSearch)
+            {
                 userFound = true;
 
                 // Check if sufficient balance exists
-                if (balance >= withdrawAmount) {
+                if (balance >= withdrawAmount)
+                {
                     balance -= withdrawAmount;
                     cout << "Withdrawal successful!" << endl;
                     cout << "Remaining Balance: $" << balance << endl;
+                    addTransaction(generateTransactionID(), username, withdrawAmount, "WithDrawal");
                 }
-                else {
+                else
+                {
                     cout << "Error: Insufficient balance!" << endl;
                     return; // Exit without updating the file
                 }
@@ -202,15 +218,17 @@ public:
 
         inputFile.close();
 
-
-        if (!userFound) {
+        // If the user was not found, show an error
+        if (!userFound)
+        {
             cout << "Error: User with username '" << usernameToSearch << "' not found!" << endl;
             return;
         }
 
         // Write the updated data back to the file
         ofstream outputFile(filePath, ios::trunc);
-        if (!outputFile) {
+        if (!outputFile)
+        {
             cout << "Error: Unable to write to file!" << endl;
             return;
         }
@@ -219,7 +237,8 @@ public:
         outputFile.close();
     }
 
-    void transferMoney(string senderName) {
+    void transferMoney(string senderName)
+    {
         string filePath = "customerdata.csv";
         string receiverAcc;
         double amount;
@@ -236,31 +255,35 @@ public:
 
         // Open the file for reading
         ifstream inputFile(filePath);
-        if (!inputFile) {
+        if (!inputFile)
+        {
             cout << "Error: Unable to open file!" << endl;
             return;
         }
 
         // Read and process the file line by line
         string line;
-        while (getline(inputFile, line)) {
+        while (getline(inputFile, line))
+        {
             stringstream ss(line);
             string username, password, accountType, pin, accountNumber;
             double balance;
 
             // Parse the line
-            getline(ss, username, ','); // 1st field
-            getline(ss, password, ','); // 2nd field
-            getline(ss, accountType, ','); // 3rd field
-            getline(ss, pin, ','); // 4th field
+            getline(ss, username, ',');      // 1st field
+            getline(ss, password, ',');      // 2nd field
+            getline(ss, accountType, ',');   // 3rd field
+            getline(ss, pin, ',');           // 4th field
             getline(ss, accountNumber, ','); // 5th field
-            ss >> balance; // 6th field
+            ss >> balance;                   // 6th field
 
             // Check if it's the sender
-            if (username == senderName) {
+            if (username == senderName)
+            {
                 senderFound = true;
                 senderAccountNumber = accountNumber;
-                if (balance < amount) {
+                if (balance < amount)
+                {
                     cout << "Error: Insufficient balance in sender's account!" << endl;
                     return;
                 }
@@ -269,7 +292,8 @@ public:
             }
 
             // Check if it's the receiver
-            if (accountNumber == receiverAcc) {
+            if (accountNumber == receiverAcc)
+            {
                 receiverFound = true;
                 receiverBalance = balance + amount; // Add amount
                 line = username + "," + password + "," + accountType + "," + pin + "," + accountNumber + "," + to_string(receiverBalance);
@@ -281,107 +305,127 @@ public:
 
         inputFile.close();
 
-
-        if (!senderFound) {
+        // Ensure both accounts were found
+        if (!senderFound)
+        {
             cout << "Error: Sender with name '" << senderName << "' not found!" << endl;
             return;
         }
-        if (!receiverFound) {
+        if (!receiverFound)
+        {
             cout << "Error: Receiver account number '" << receiverAcc << "' not found!" << endl;
             return;
         }
+
+        // Write updated data back to the file
         ofstream outputFile(filePath, ios::trunc);
-        for (const auto& updatedLine : lines) {
+        for (const auto& updatedLine : lines)
+        {
             outputFile << updatedLine << endl;
         }
         outputFile.close();
 
         cout << "Transaction successful! $" << amount << " transferred from "
             << senderAccountNumber << " to " << receiverAcc << "." << endl;
+        addTransaction(generateTransactionID(), senderName, amount, "MoneyTransfer to " + receiverAcc);
     }
-
-    void loadTransactionsFromFile() {
+    // Function to load transactions from a file
+    void loadTransactionsFromFile()
+    {
         ifstream inputFile("transactions.csv");
         string line;
-        while (getline(inputFile, line)) {
-            string tID, uname, t, d, desc;
+        while (getline(inputFile, line))
+        {
+            string tID, uname, event, buffer;
             double amt;
             stringstream ss(line);
             getline(ss, tID, ',');
             getline(ss, uname, ',');
             ss >> amt;
-            ss.ignore(1, ',');
-            getline(ss, t, ',');
-            getline(ss, d, ',');
-            getline(ss, desc, ',');
+            ss.ignore(1, ','); // Ignore the comma
+            getline(ss, event, ',');
+            getline(ss, buffer, ',');
 
-            Transaction newTransaction(tID, uname, amt, t, d, desc);
+            Transaction newTransaction(tID, uname, amt, event, buffer);
             transactions.push_back(newTransaction);
         }
         inputFile.close();
     }
 
     // Function to save all transactions to a file
-    void saveTransactionsToFile() const {
+    void saveTransactionsToFile() const
+    {
         ofstream outputFile("transactions.csv", ios::trunc);
-        for (const auto& transaction : transactions) {
+        for (const auto& transaction : transactions)
+        {
             outputFile << transaction.transactionID << ","
                 << transaction.username << ","
                 << fixed << setprecision(2) << transaction.amount << ","
-                << transaction.type << ","
-                << transaction.date << ","
-                << transaction.description << endl;
+                << transaction.event << ","
+                << transaction.date << endl;
         }
         outputFile.close();
     }
 
     // Function to display all transactions for a specific user
-    void displayTransactionsForUser(const string& username) const {
+    void displayTransactionsForUser(const string& username) const
+    {
         cout << "\nTransactions for " << username << ":\n";
         bool found = false;
-        for (const auto& transaction : transactions) {
-            if (transaction.username == username) {
+        for (const auto& transaction : transactions)
+        {
+            if (transaction.username == username)
+            {
                 transaction.displayTransaction();
                 found = true;
             }
         }
-        if (!found) {
+        if (!found)
+        {
             cout << "\nNo transactions found for this user.\n";
         }
     }
 
     // Function to display all transactions
-    void displayAllTransactions() const {
-        if (transactions.empty()) {
+    void displayAllTransactions() const
+    {
+        if (transactions.empty())
+        {
             cout << "\nNo transactions available.\n";
         }
-        else {
-            for (const auto& transaction : transactions) {
+        else
+        {
+            for (const auto& transaction : transactions)
+            {
                 transaction.displayTransaction();
             }
         }
     }
 
     // Function to generate a unique transaction ID
-    string generateTransactionID() {
+    string generateTransactionID()
+    {
         return "TXN" + to_string(transactionCounter++);
     }
 
     // Load the transaction counter from a file
-    void loadTransactionCounter() {
+    void loadTransactionCounter()
+    {
         ifstream counterFile("transaction_counter.txt");
-        if (counterFile.is_open()) {
+        if (counterFile.is_open())
+        {
             counterFile >> transactionCounter;
         }
         counterFile.close();
     }
 
-
-    void showBalance(string nameToSearch) {
+    void showBalance(string nameToSearch)
+    {
         string filePath = "customerdata.csv";
         // Open the file for reading
         ifstream inputFile(filePath);
-        if (!inputFile) {
+        if (!inputFile)
+        {
             cout << "Error: Unable to open file!" << endl;
             return;
         }
@@ -390,21 +434,23 @@ public:
         bool userFound = false;
 
         // Read and process the file line by line
-        while (getline(inputFile, line)) {
+        while (getline(inputFile, line))
+        {
             stringstream ss(line);
             string username, password, accountType, pin, accountNumber;
             double balance;
 
             // Parse the line
-            getline(ss, username, ','); // 1st field
-            getline(ss, password, ','); // 2nd field
-            getline(ss, accountType, ','); // 3rd field
-            getline(ss, pin, ',');        // 4th field
+            getline(ss, username, ',');      // 1st field
+            getline(ss, password, ',');      // 2nd field
+            getline(ss, accountType, ',');   // 3rd field
+            getline(ss, pin, ',');           // 4th field
             getline(ss, accountNumber, ','); // 5th field
-            ss >> balance;               // 6th field
+            ss >> balance;                   // 6th field
 
             // Check if the name matches
-            if (username == nameToSearch) {
+            if (username == nameToSearch)
+            {
                 userFound = true;
                 cout << "Account Holder: " << username << endl;
                 cout << "Account Number: " << accountNumber << endl;
@@ -415,30 +461,35 @@ public:
 
         inputFile.close();
 
-        if (!userFound) {
+        if (!userFound)
+        {
             cout << "Error: User with name '" << nameToSearch << "' not found!" << endl;
         }
     }
     // Save the transaction counter to a file
-    void saveTransactionCounter() const {
-        ofstream counterFile(" transaction_counter.txt", ios::trunc);
+    void saveTransactionCounter() const
+    {
+        ofstream counterFile("transaction_counter.txt", ios::trunc);
         counterFile << transactionCounter;
         counterFile.close();
     }
 
-    ~TransactionManager() {
+    ~TransactionManager()
+    {
         saveTransactionCounter(); // Save counter on destruction
     }
 };
 
-void handleTransactions() {
+void handleTransactions()
+{
     TransactionManager transactionManager;
     transactionManager.loadTransactionsFromFile();
 
     string username;
     char choice;
 
-    do {
+    do
+    {
         cout << "\nTransaction Menu:\n";
         cout << "1. Deposit\n";
         cout << "2. Withdraw\n";
@@ -448,7 +499,8 @@ void handleTransactions() {
         cout << "Enter your choice: ";
         cin >> choice;
 
-        switch (choice) {
+        switch (choice)
+        {
         case '1':
             cout << "\nEnter Username: ";
             cin >> username;
@@ -474,7 +526,8 @@ void handleTransactions() {
             cout << "\nInvalid choice. Please try again.\n";
         }
 
-        if (choice != '5') {
+        if (choice != '5')
+        {
             cout << "\nPress Enter to continue...";
             cin.ignore();
             cin.get();

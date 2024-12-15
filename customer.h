@@ -42,29 +42,70 @@ Customer::Customer(const string& name, const string& username, const string& pas
     : name(name), username(username), password(password), accountType(accountType),
     balance(balance), pincode(pincode), accountNumber(accountNumber), next(nullptr) {}
 
+bool isUsernameExists(const string& username) {
+    ifstream customersFile("customersdata.csv");
+    if (!customersFile.is_open()) {
+        throw runtime_error("Failed to open customersdata.csv file.");
+    }
+    string line, existingUsername;
+    while (getline(customersFile, line)) {
+        size_t pos = line.find(',');
+        if (pos != string::npos) {
+            existingUsername = line.substr(0, pos); // Assuming username is the first field in the line
+            if (existingUsername == username) {
+                customersFile.close();
+                return true;
+            }
+        }
+    }
+    customersFile.close();
+    return false;
+}
 void addCustomer(const string& name, const string& username, const string& password,
-    const string& accountType, double balance, const string& pincode, string& accountNumber)
-{
+    const string& accountType, double balance, const string& pincode, string& accountNumber) {
+    try {
+        
+        if (name.empty() || username.empty() || password.empty() || accountType.empty()) {
+            throw invalid_argument("Input fields cannot be empty.");
+        }
+        if (accountType != "savings" && accountType != "current") {
+            throw invalid_argument("Account type must be either 'savings' or 'current'.");
+        }
+        if (balance <= 0) {
+            throw invalid_argument("Balance must be greater than zero.");
+        }
+        if (isUsernameExists(username)) {
+            throw invalid_argument("A user with this username already exists.");
+        }
+        srand(time(0));
+        accountNumber = "ACC" + to_string(rand() % 1000000);
+        string pin = to_string(rand() % 9000 + 1000);
 
-    srand(time(0));
-    accountNumber = "ACC" + to_string(rand() % 1000000); // Generate the account number
+        Customer* newCustomer = new Customer(name, username, password, accountType, balance, pin, accountNumber);
+        newCustomer->next = customerHead;
+        customerHead = newCustomer;
 
-    string pin = to_string(rand() % 9000 + 1000); // Generate a pin
-    Customer* newCustomer = new Customer(name, username, password, accountType, balance, pin, accountNumber);
-    newCustomer->next = customerHead;
-    customerHead = newCustomer;
+        saveCustomersToFile();
+        ofstream pinFile("pincode.csv", ios::app);
+        if (!pinFile.is_open()) {
+            throw runtime_error("Failed to open pincode.csv file.");
+        }
+        pinFile << username << "," << pin << endl;
+        pinFile.close();
 
-    saveCustomersToFile();
+        cout << "\n\t\t\t\t  Customer Added Successfully with Account Number: " << accountNumber
+            << " and pincode: " << pin;
+        cout << "\t\t\t\t\t\t\t\t\t\tPRESS ENTER TO CONTINUE........." << endl;
+        cin.get();
 
-    // Save the pin to a separate file
-    ofstream pinFile("pincode.csv", ios::app);
-    pinFile << username << "," << pin << endl;
-    pinFile.close();
-
-
-    cout << "\n\t\t\t\t  Customer Added Successfully with Account Number: " << accountNumber << "and pincode: " << pin;
-    cout << "\t\t\t\t\t\t\t\t\t\tPRESS ENTER TO CONTINUE........." << endl;
-    cin.get();
+    }
+    catch (const exception& e) {
+        cerr << "\nError: " << e.what() << endl;
+        cin.clear(); 
+        cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+        cout << "\t\t\t\t\t\tPRESS ENTER TO RETURN TO MENU........." << endl;
+        cin.get();
+    }
 }
 
 void loadCustomersFromFile()
@@ -94,8 +135,7 @@ void saveCustomersToFile()
     Customer* current = customerHead;
     while (current != nullptr)
     {
-        outputFile << current->name << ","
-            << current->username << ","
+        outputFile << current->username<<","
             << current->password << ","
             << current->accountType << ","
             << current->pincode << ","
